@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { DynamicDocPageConfig } from '@cdp/component-document-portal/util-types';
+import { from, Subject, takeUntil } from 'rxjs';
+import { ConfigServiceService } from './config-service.service';
 
 import { docPageConfigs } from './doc-page-configs';
 
@@ -26,13 +28,23 @@ interface DocPageRoutesDictionary {
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
-export class AppComponent {
+export class AppComponent implements OnDestroy {
   docPageRoutes: DocPageRoutes;
+  destroy = new Subject<void>();
+  configObservable = from(this.configService.getConfig());
 
-  constructor() {
+  constructor(private configService: ConfigServiceService) {
     const routesDictionary = createDocRoutesDictionary(docPageConfigs);
 
     this.docPageRoutes = convertToDocPageRoutes(routesDictionary);
+    this.configObservable
+      .pipe(takeUntil(this.destroy))
+      .subscribe((value) => console.log(value));
+  }
+
+  ngOnDestroy(): void {
+    this.destroy.next();
+    this.destroy.complete();
   }
 }
 
